@@ -1,3 +1,7 @@
+import java.util.*;
+import java.io.File;
+import java.io.IOException;
+
 String gameMode = "menu";
 color black = color(0, 0, 0);
 color white = color(255, 255, 255);
@@ -19,8 +23,6 @@ Boolean modeChanging = false;
 
 String[] games = {"platformer", "match-three"};
 
-
-
 void setup() {
   size(1000, 900);
   surface.setResizable(true);
@@ -40,10 +42,9 @@ public class Particle {
   int timeAlive = 0;
   float angMomentum;
   int a = 100;
-  float degree = 0;
   Boolean done = false;
 
-  Particle(float x, float y, float w, float h, color c, String type, float vx, float vy, int fadeTime, float angMomentum) {
+  Particle(float x, float y, float w, float h, color c, String type, float vx, float vy, int fadeTime) {
     this.x = x;
     this.y = y;
     this.w = w;
@@ -53,8 +54,6 @@ public class Particle {
     this.vx = vx;
     this.vy = vy;
     this.fadeTime = fadeTime;
-    this.angMomentum = angMomentum;
-    this.degree = 0;
     this.done = false;
   }
 
@@ -72,22 +71,19 @@ public class Particle {
     }
   }
 
-  public void run() {
+  public Boolean run() {
     this.display();
     this.x += this.vx;
     this.y += this.vy;
     this.vy += 0.1;
-    this.degree += this.angMomentum;
-    //pushMatrix();
-    //rotate(this.degree);
-    //popMatrix();
     if (this.timeAlive <= this.fadeTime) {
       this.a -= 100/this.fadeTime;
     }
     ++this.timeAlive;
     if (this.timeAlive > this.fadeTime) {
-      this.done = true;
+      return false;
     }
+    return true;
   }
 }
 
@@ -96,9 +92,9 @@ public class Player {
   float y;
   float w;
   float h;
-  color[] palette;
-  int[] graphic;
-  int[] displayModes;
+  color[] palette = new color[256];
+  int[] graphic = new int[65536];
+  int[] displayModes = new int[16];
 
   Player(float x, float y, float w, float h, color[] palette, int[] graphic) {
     this.x = x;
@@ -107,34 +103,54 @@ public class Player {
     this.h = h;
     this.palette = palette;
     this.graphic = graphic;
+    
   }
   // TODO
+  void display() {
+    for (int i : graphic) {
+      fill(palette[graphic[i]]);
+      rect(x + i%256*(w/256), y + floor(i/256)*(h/256), w/256, h/256); 
+    }
+  }
 }
 
 public class Actor {
   float x;
   float y;
+  float w;
+  float h;
 
-  public class Fountain extends Actor {
-    float w;
-    float h;
-    Particle particles;
-    Fountain(float x, float y, float w, float h) {
-      this.x = x;
-      this.y = y;
-      this.w = w;
-      this.h = h;
-    }
-    public void fountain() {
-      particles.add(new Particle(this.x, this.y, 10, 10, pink, "rect", random(-3, 3), -2, 10, 0));
-      if (particles.length > 50) {
-      }
-      for (int i = 0; i < particles.length; ++i) {
-        particles[i].display();
-      }
-    }
+  Actor(float _x, float _y, float _w, float _h) {
+    x = _x;
+    y = _y;
+    w = _w;
+    h = _h;
   }
   // TODO
+}
+
+public class Fountain extends Actor {
+  Set<Particle> particles;
+  
+  Fountain(float _x, float _y, float _w, float _h) {
+    super(_x, _y, _w, _h);
+    particles = new HashSet<Particle>();
+  }
+    
+  public void run() {
+    // add a new particle to the fountain
+    particles.add(new Particle(x, y, 10, 20, black, "ellipse", random(-3, 3), -2, 100));
+    // runs all particles
+    Set<Particle> removal = new HashSet<Particle>();
+    for (Particle particle : particles) {
+      if (!particle.run()) {
+        removal.add(particle);
+      }
+    }
+    for (Particle particle : removal) {
+      particles.remove(particle);
+    }
+  }
 }
 
 public class Button {
@@ -305,7 +321,12 @@ Button shop = new Button(350, 550, 175, 175, grey, "rect", "Shop", black, "shop"
 Button settings = new Button(650, 550, 175, 175, grey, "rect", "Settings", black, "settings", 30, 0.5, "fade");
 Button shopBack = new Button(100, 100, 75, 50, grey, "rect", "Back", black, "menu", 30, 0, "none");
 
-Actor.Fountain testFountain = new Actor().new Fountain(400, 400, 10, 10);
+color[] testPalette = {black, white, red};
+
+
+int[] testGraphic = {0, 1, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2};
+
+Player testPlayer = new Player(400, 400, 500, 500, testPalette, testGraphic);
 
 void draw() {
   background(white);
@@ -315,7 +336,7 @@ void draw() {
     game.run();
     shop.run();
     settings.run();
-    testFountain.fountain();
+    testPlayer.display();
   } // TODO
   if (gameMode == "game") {
     fill(black);
