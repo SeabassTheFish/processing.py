@@ -19,13 +19,15 @@ Boolean modeChanging = false;
 
 String[] games = {"platformer", "match-three"};
 
+
+
 void setup() {
   size(1000, 900);
   surface.setResizable(true);
   fill(255, 0, 0);
 }
 
-class Particle {
+public class Particle {
   color c;
   float x;
   float y;
@@ -37,8 +39,10 @@ class Particle {
   int fadeTime;
   int timeAlive = 0;
   float angMomentum;
-  int a;
-  
+  int a = 100;
+  float degree = 0;
+  Boolean done = false;
+
   Particle(float x, float y, float w, float h, color c, String type, float vx, float vy, int fadeTime, float angMomentum) {
     this.x = x;
     this.y = y;
@@ -50,34 +54,96 @@ class Particle {
     this.vy = vy;
     this.fadeTime = fadeTime;
     this.angMomentum = angMomentum;
+    this.degree = 0;
+    this.done = false;
   }
-  
-  void display() {
+
+  public void display() {
+    stroke(black, a);
     switch (this.type) {
-      case "rect":
-        fill(this.c);
-        rect(this.x, this.y, this.w, this.h);
-        break;
-      case "ellipse":
-        fill(this.c);
-        ellipse(this.x, this.y, this.w, this.h);
-        break;
+    case "rect":
+      fill(this.c, a);
+      rect(this.x, this.y, this.w, this.h);
+      break;
+    case "ellipse":
+      fill(this.c, a);
+      ellipse(this.x, this.y, this.w, this.h);
+      break;
     }
   }
-  
-  void run() {
-    
-    ++timeAlive;
+
+  public void run() {
+    this.display();
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += 0.1;
+    this.degree += this.angMomentum;
+    //pushMatrix();
+    //rotate(this.degree);
+    //popMatrix();
+    if (this.timeAlive <= this.fadeTime) {
+      this.a -= 100/this.fadeTime;
+    }
+    ++this.timeAlive;
+    if (this.timeAlive > this.fadeTime) {
+      this.done = true;
+    }
   }
 }
 
-class Button {
+public class Player {
+  float x;
+  float y;
+  float w;
+  float h;
+  color[] palette;
+  int[] graphic;
+  int[] displayModes;
+
+  Player(float x, float y, float w, float h, color[] palette, int[] graphic) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.palette = palette;
+    this.graphic = graphic;
+  }
+  // TODO
+}
+
+public class Actor {
+  float x;
+  float y;
+
+  public class Fountain extends Actor {
+    float w;
+    float h;
+    Particle particles;
+    Fountain(float x, float y, float w, float h) {
+      this.x = x;
+      this.y = y;
+      this.w = w;
+      this.h = h;
+    }
+    public void fountain() {
+      particles.add(new Particle(this.x, this.y, 10, 10, pink, "rect", random(-3, 3), -2, 10, 0));
+      if (particles.length > 50) {
+      }
+      for (int i = 0; i < particles.length; ++i) {
+        particles[i].display();
+      }
+    }
+  }
+  // TODO
+}
+
+public class Button {
   color c;
   float x;
   float y;
   float w;
   float h;
-  float a;
+  float a = 100;
   String shape;
   String text;
   boolean pressed;
@@ -88,7 +154,7 @@ class Button {
   int textSize;
   float fFactor;
   String coolThing;
-  
+
 
   Button(float x, float y, float w, float h, color c, String shape, String text, color tc, String action, int textSize, float floatFactor, String coolThing) {
     this.x = x;
@@ -106,7 +172,7 @@ class Button {
     this.textSize = textSize;
     this.fFactor = floatFactor;
     this.coolThing = coolThing;
-    
+
     if (this.coolThing == "fade") {
       this.a = 0;
     } else {
@@ -114,7 +180,7 @@ class Button {
     }
   }
 
-  void display() {
+  public void display() {
     stroke(black, this.a);
     fill(this.c, this.a);
     switch (this.shape) {
@@ -206,7 +272,7 @@ class Button {
     }
   }
 
-  void run() {
+  public void run() {
     this.display();
     this.floater();
     if (this.clicked) {
@@ -221,11 +287,11 @@ class Button {
     }
   }
 
-  void floater() {
+  public void floater() {
     this.y += this.fFactor*sin(0.05*modeTime);
   }
-  
-  void modeChange() {
+
+  public void modeChange() {
     if (this.coolThing == "fade") {
       this.a = 0;
     }
@@ -234,10 +300,12 @@ class Button {
   }
 }
 
-Button game = new Button(500, 300, 175, 175, grey, "rect", "Games", black, "games", 30, 0.5, "fade");
+Button game = new Button(500, 300, 175, 175, grey, "rect", "Game", black, "game", 30, 0.5, "fade");
 Button shop = new Button(350, 550, 175, 175, grey, "rect", "Shop", black, "shop", 30, 0.5, "fade");
 Button settings = new Button(650, 550, 175, 175, grey, "rect", "Settings", black, "settings", 30, 0.5, "fade");
 Button shopBack = new Button(100, 100, 75, 50, grey, "rect", "Back", black, "menu", 30, 0, "none");
+
+Actor.Fountain testFountain = new Actor().new Fountain(400, 400, 10, 10);
 
 void draw() {
   background(white);
@@ -247,15 +315,17 @@ void draw() {
     game.run();
     shop.run();
     settings.run();
+    testFountain.fountain();
   } // TODO
-  if (gameMode == "games") {
+  if (gameMode == "game") {
     fill(black);
     textSize(50);
+    text("Foo", 400, 400);
   } // TODO
   if (gameMode == "settings") {
   } // TODO
   if (gameMode == "shop") {
-    
+
     shopBack.run();
   } // TODO
 
