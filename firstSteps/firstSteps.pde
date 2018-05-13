@@ -2,6 +2,8 @@ import java.util.*;
 import java.io.File;
 import java.io.IOException;
 
+
+
 String gameMode = "menu";
 color black = color(0, 0, 0);
 color white = color(255, 255, 255);
@@ -15,6 +17,7 @@ color pink = color(255, 100, 255);
 color cyan = color(0, 255, 255);
 color orange = color(255, 100, 0);
 color grey = color(200, 200, 200);
+color alpha = color(0, 0, 255, 0);
 
 int teaTime = 0;
 int modeTime = 0;
@@ -22,11 +25,19 @@ int modeTime = 0;
 Boolean modeChanging = false;
 
 String[] games = {"platformer", "match-three"};
+String[] stuff = new String[64];
+int[] testGraphic = new int[64];
+color[] testPalette = {green, white, red};
 
 void setup() {
   size(1000, 900);
   surface.setResizable(true);
   fill(255, 0, 0);
+  stuff = loadStrings("testGraphic.txt");
+  for (int i = 0; i < stuff.length; ++i) {
+    System.out.println(stuff[0]);
+  }
+  testGraphic = int(split(stuff[0], " "));
 }
 
 public class Particle {
@@ -92,24 +103,27 @@ public class Player {
   float y;
   float w;
   float h;
-  color[] palette = new color[256];
-  int[] graphic = new int[65536];
+  color[] palette;
+  int[] graphic;
   int[] displayModes = new int[16];
 
-  Player(float x, float y, float w, float h, color[] palette, int[] graphic) {
+  Player(float x, float y, float w, float h, color[] _palette, int[] _graphic) {
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
-    this.palette = palette;
-    this.graphic = graphic;
-    
+    this.palette = _palette;
+    for (int i = 0; i < _graphic.length; ++i) {
+      System.out.println(_graphic[i]);
+    }
+    System.out.println("This is a recording");
+    this.graphic = _graphic;    
   }
   // TODO
   void display() {
-    for (int i : graphic) {
+    for (int i = 0; i < graphic.length; ++i) {
       fill(palette[graphic[i]]);
-      rect(x + i%256*(w/256), y + floor(i/256)*(h/256), w/256, h/256); 
+      rect(x + i%8*(w/8), y + floor(i/8)*(h/8), w/8, h/8); 
     }
   }
 }
@@ -321,12 +335,10 @@ Button shop = new Button(350, 550, 175, 175, grey, "rect", "Shop", black, "shop"
 Button settings = new Button(650, 550, 175, 175, grey, "rect", "Settings", black, "settings", 30, 0.5, "fade");
 Button shopBack = new Button(100, 100, 75, 50, grey, "rect", "Back", black, "menu", 30, 0, "none");
 
-color[] testPalette = {black, white, red};
+int[] theGraphic = new int[64];
 
-
-int[] testGraphic = {0, 1, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2};
-
-Player testPlayer = new Player(400, 400, 500, 500, testPalette, testGraphic);
+Player testPlayer = new Player(400, 400, 64, 64, testPalette, theGraphic);
+Fountain testFountain = new Fountain(500, 500, 64, 64);
 
 void draw() {
   background(white);
@@ -337,6 +349,7 @@ void draw() {
     shop.run();
     settings.run();
     testPlayer.display();
+    testFountain.run();
   } // TODO
   if (gameMode == "game") {
     fill(black);
