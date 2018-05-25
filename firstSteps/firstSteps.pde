@@ -2,7 +2,8 @@ import java.util.*;
 import java.io.File;
 import java.io.IOException;
 
-
+int width;
+int height;
 
 String gameMode = "menu";
 color black = color(0, 0, 0);
@@ -25,19 +26,51 @@ int modeTime = 0;
 Boolean modeChanging = false;
 
 String[] games = {"platformer", "match-three"};
-String[] stuff = new String[64];
-int[] testGraphic = new int[64];
-color[] testPalette = {green, white, red};
+
+int[] theGraphic = new int[64];
+
+color[] testPalette = {grey, black};
+
+color[] worldPalette = {black, orange, green};
+
+
+Button testButton;
+
+Fountain testFountain;
+
+Player testPlayer;
+
+Blast testBlast;
+
+Block testBlock;
+
+int[] parseBitmap(String[] input, int width, int height, int[] output) {
+  for (int i = 0; i < width; ++i) {
+    for (int j = 0; j < height; ++j) {
+      output[j*8 + i] = (int(split(input[j], " ")))[i];
+    }
+  }
+  return output;
+}
 
 void setup() {
   size(1000, 900);
+  width = 1000;
+  height = 900;
   surface.setResizable(true);
   fill(255, 0, 0);
-  stuff = loadStrings("testGraphic.txt");
-  for (int i = 0; i < stuff.length; ++i) {
-    System.out.println(stuff[0]);
-  }
-  testGraphic = int(split(stuff[0], " "));
+  String[] scannedTestGraphic = loadStrings("testGraphics/testGraphic.txt");
+  theGraphic = parseBitmap(scannedTestGraphic, 8, 8, theGraphic);
+  
+  testButton = new Button(width/2, height/3, width*1/8, height*1/6, grey, "rect", "Test", black, "test", 30, 0.5, "fade");
+  
+  testPlayer = new Player(width*2/5, height*5/9, width/10, height/9, testPalette, theGraphic);
+  
+  testFountain = new Fountain(600, 500, 10, 10, grey, "rect");
+  
+  testBlast = new Blast(700, 600, 10, 10, grey, "ellipse");
+  
+  testBlock = new Block(700, 300, 50, 50, "portal");
 }
 
 public class Particle {
@@ -55,43 +88,43 @@ public class Particle {
   int a = 100;
   Boolean done = false;
 
-  Particle(float x, float y, float w, float h, color c, String type, float vx, float vy, int fadeTime) {
-    this.x = x;
-    this.y = y;
-    this.w = w;
-    this.h = h;
-    this.c = c;
-    this.type = type;
-    this.vx = vx;
-    this.vy = vy;
-    this.fadeTime = fadeTime;
-    this.done = false;
+  Particle(float _x, float _y, float _w, float _h, color _c, String _type, float _vx, float _vy, int _fadeTime) {
+    x = _x;
+    y = _y;
+    w = _w;
+    h = _h;
+    c = _c;
+    type = _type;
+    vx = _vx;
+    vy = _vy;
+    fadeTime = _fadeTime;
+    done = false;
   }
 
   public void display() {
     stroke(black, a);
-    switch (this.type) {
+    switch (type) {
     case "rect":
-      fill(this.c, a);
-      rect(this.x, this.y, this.w, this.h);
+      fill(c, a);
+      rect(x, y, w, h);
       break;
     case "ellipse":
-      fill(this.c, a);
-      ellipse(this.x, this.y, this.w, this.h);
+      fill(c, a);
+      ellipse(x, y, w, h);
       break;
     }
   }
 
   public Boolean run() {
-    this.display();
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += 0.1;
-    if (this.timeAlive <= this.fadeTime) {
-      this.a -= 100/this.fadeTime;
+    display();
+    x += vx;
+    y += vy;
+    vy += 0.1;
+    if (timeAlive <= fadeTime) {
+      a -= 100/fadeTime;
     }
-    ++this.timeAlive;
-    if (this.timeAlive > this.fadeTime) {
+    ++timeAlive;
+    if (timeAlive > fadeTime) {
       return false;
     }
     return true;
@@ -103,28 +136,60 @@ public class Player {
   float y;
   float w;
   float h;
+  float vx;
+  float vy;
   color[] palette;
   int[] graphic;
   int[] displayModes = new int[16];
+  Boolean onBlock;
 
-  Player(float x, float y, float w, float h, color[] _palette, int[] _graphic) {
-    this.x = x;
-    this.y = y;
-    this.w = w;
-    this.h = h;
-    this.palette = _palette;
-    for (int i = 0; i < _graphic.length; ++i) {
-      System.out.println(_graphic[i]);
-    }
-    System.out.println("This is a recording");
-    this.graphic = _graphic;    
+  Player(float _x, float _y, float _w, float _h, color[] _palette, int[] _graphic) {
+    x = _x;
+    y = _y;
+    w = _w;
+    h = _h;
+    vx = 0;
+    vy = 0;
+    onBlock = true;
+    palette = _palette;
+    graphic = _graphic;
   }
   // TODO
+
   void display() {
     for (int i = 0; i < graphic.length; ++i) {
+      stroke(palette[graphic[i]]);
       fill(palette[graphic[i]]);
-      rect(x + i%8*(w/8), y + floor(i/8)*(h/8), w/8, h/8); 
+      rect(x + i%8*(w/8), y + floor(i/8)*(h/8), w/8, h/8);
     }
+  }
+  
+  void run() {
+    display();
+    char theKeyPressed;
+    if (keyPressed) {
+      theKeyPressed = key;
+      if (theKeyPressed == 'w') {
+        if (onBlock) {
+          vy -= 20;
+        }
+      }
+      if (theKeyPressed == 'a') {
+        vx -= 3;
+      }
+      if (theKeyPressed == 'd') {
+        vx += 3;
+      }
+    } else if (!keyPressed) {
+      theKeyPressed = '`';
+    }
+    if (!onBlock) {
+      vy += 5;
+    }
+    x += vx;
+    y += vy;
+    vx -= (vx != 0 ? (vx < 0 ? -1 : 1) : 0);
+    
   }
 }
 
@@ -143,17 +208,73 @@ public class Actor {
   // TODO
 }
 
+public class Block extends Actor {
+  String type;
+  Boolean deadly;
+  
+  Block(float _x, float _y, float _w, float _h, String _type) {
+    super(_x, _y, _w, _h);
+    deadly = false;
+    type = _type;
+  }
+  
+  void display() {
+    switch (type) {
+      case ("spike^"): 
+        fill(worldPalette[0]);
+        triangle(x + w/2, y, x, y + h, x + w, y + h);
+        deadly = true;
+        break;
+      case ("spikeV"): 
+        fill(worldPalette[0]);
+        triangle(x + w/2, y + h, x, y, x + w, y);
+        deadly = true;
+        break;
+      case ("spike>"):
+        fill(worldPalette[0]);
+        triangle(x, y, x, y + h, x + h, y + h/2);
+        deadly = true;
+        break;
+      case ("spike<"):
+        fill(worldPalette[0]);
+        triangle(x + w, y, x + w, y + h, x, y + h/2);
+        deadly = true;
+        break;
+      case ("brick"):
+        fill(worldPalette[0]);
+        rect(x, y, w, h);
+        break;
+      case ("lava"):
+        fill(worldPalette[1]);
+        rect(x, y, w, h);
+        deadly = true;
+        break;
+      case ("portal"):
+        fill(worldPalette[2]);
+        rect(x, y, w, h);
+        deadly = true;
+        break;
+    } // TODO
+  }
+  
+}
+
 public class Fountain extends Actor {
   Set<Particle> particles;
-  
-  Fountain(float _x, float _y, float _w, float _h) {
+  color c;
+  String shape;
+
+  Fountain(float _x, float _y, float _w, float _h, color _c, String _shape) {
     super(_x, _y, _w, _h);
-    particles = new HashSet<Particle>();
-  }
     
-  public void run() {
+    particles = new HashSet<Particle>();
+    c = _c;
+    shape = _shape;
+  }
+
+  void run() {
     // add a new particle to the fountain
-    particles.add(new Particle(x, y, 10, 20, black, "ellipse", random(-3, 3), -2, 100));
+    particles.add(new Particle(x, y, w, h, c, shape, random(-3, 3), -2, 100));
     // runs all particles
     Set<Particle> removal = new HashSet<Particle>();
     for (Particle particle : particles) {
@@ -163,6 +284,36 @@ public class Fountain extends Actor {
     }
     for (Particle particle : removal) {
       particles.remove(particle);
+    }
+  }
+}
+
+public class Blast extends Actor {
+  Set<Particle> particles;
+  color c;
+  String shape;
+  Blast(float _x, float _y, float _w, float _h, color _c, String _shape) {
+    super(_x, _y, _w, _h);
+    
+    particles = new HashSet<Particle>();
+    c = _c;
+    shape = _shape;
+    
+    for (int i = 0; i < 50; ++i) {
+      particles.add(new Particle(x, y, w, h, c, shape, random(-3, 3), random(-5, 0), 100));
+    }
+  }
+  
+  void run() {
+    Set<Particle> removal = new HashSet<Particle>();
+    
+    for (Particle particle : particles) {
+      if (!particle.run()) {
+        removal.add(particle);
+      }
+    }
+    for (Particle particle : removal) {
+      particles.remove(particle);  
     }
   }
 }
@@ -186,170 +337,164 @@ public class Button {
   String coolThing;
 
 
-  Button(float x, float y, float w, float h, color c, String shape, String text, color tc, String action, int textSize, float floatFactor, String coolThing) {
-    this.x = x;
-    this.y = y;
-    this.w = w;
-    this.h = h;
-    this.c = c;
-    this.shape = shape;
-    this.text = text;
-    this.pressed = false;
-    this.tc = tc;
-    this.hover = false;
-    this.clicked = false;
-    this.action = action;
-    this.textSize = textSize;
-    this.fFactor = floatFactor;
-    this.coolThing = coolThing;
+  Button(float _x, float _y, float _w, float _h, color _c, String _shape, String _text, color _tc, String _action, int _textSize, float _floatFactor, String _coolThing) {
+    x = _x;
+    y = _y;
+    w = _w;
+    h = _h;
+    c = _c;
+    shape = _shape;
+    text = _text;
+    pressed = false;
+    tc = _tc;
+    hover = false;
+    clicked = false;
+    action = _action;
+    textSize = _textSize;
+    fFactor = _floatFactor;
+    coolThing = _coolThing;
 
-    if (this.coolThing == "fade") {
-      this.a = 0;
+    if (coolThing == "fade") {
+      a = 0;
     } else {
-      this.a = 255;
+      a = 255;
     }
   }
 
   public void display() {
-    stroke(black, this.a);
-    fill(this.c, this.a);
-    switch (this.shape) {
+    stroke(black, a);
+    fill(c, a);
+    switch (shape) {
     case "rect":
       rectMode(CENTER);
-      if (!this.hover) {
-        fill(black, this.a);
-        rect(this.x + (this.w/10), this.y + (this.h/10), this.w, this.h);
+      if (!hover) {
+        fill(black, a);
+        rect(x + (w/10), y + (h/10), w, h);
       }
-      fill(this.c, this.a);
-      rect(this.x, this.y, this.w, this.h);
+      fill(c, a);
+      rect(x, y, w, h);
       textAlign(CENTER, CENTER);
-      fill(this.tc);
-      textSize(this.textSize);
-      text(this.text, this.x, this.y);
+      fill(tc);
+      textSize(textSize);
+      text(text, x, y);
       break;
     case "ellipse":
-      if (!this.hover) {
+      if (!hover) {
         fill(black);
-        ellipse(this.x + (this.w/10), this.y + (this.h/10), this.w, this.h);
+        ellipse(x + (w/10), y + (h/10), w, h);
       }
-      fill(this.c);
-      ellipse(this.x, this.y, this.w, this.h);
+      fill(c);
+      ellipse(x, y, w, h);
       textAlign(CENTER, CENTER);
-      fill(this.tc);
-      textSize(this.textSize);
-      text(this.text, this.x, this.y);
+      fill(tc);
+      textSize(textSize);
+      text(text, x, y);
       break;
     case "hex":
-      if (!this.hover) {
+      if (!hover) {
         fill(black);
         beginShape();
-        vertex(this.x - this.w/3 + this.w/10, this.y - this.h/2 + this.h/10);
-        vertex(this.x + this.w/3 + this.w/10, this.y - this.h/2 + this.h/10);
-        vertex(this.x + this.w/2 + this.w/10, this.y + this.h/10);
-        vertex(this.x + this.w/3 + this.w/10, this.y + this.h/2 + this.h/10);
-        vertex(this.x - this.w/3 + this.w/10, this.y + this.h/2 + this.h/10);
-        vertex(this.x - this.w/2 + this.w/10, this.y + this.h/10);
+        vertex(x - w/3 + w/10, y - h/2 + h/10);
+        vertex(x + w/3 + w/10, y - h/2 + h/10);
+        vertex(x + w/2 + w/10, y + h/10);
+        vertex(x + w/3 + w/10, y + h/2 + h/10);
+        vertex(x - w/3 + w/10, y + h/2 + h/10);
+        vertex(x - w/2 + w/10, y + h/10);
         endShape(CLOSE);
       }
-      fill(this.c);
+      fill(c);
       beginShape();
-      vertex(this.x - this.w/3, this.y - this.h/2);
-      vertex(this.x + this.w/3, this.y - this.h/2);
-      vertex(this.x + this.w/2, this.y);
-      vertex(this.x + this.w/3, this.y + this.h/2);
-      vertex(this.x - this.w/3, this.y + this.h/2);
-      vertex(this.x - this.w/2, this.y);
+      vertex(x - w/3, y - h/2);
+      vertex(x + w/3, y - h/2);
+      vertex(x + w/2, y);
+      vertex(x + w/3, y + h/2);
+      vertex(x - w/3, y + h/2);
+      vertex(x - w/2, y);
       endShape(CLOSE);
       textAlign(CENTER, CENTER);
-      fill(this.tc);
-      textSize(this.textSize);
-      text(this.text, this.x, this.y);
+      fill(tc);
+      textSize(textSize);
+      text(text, x, y);
       break;
     case "triangle":
-      if (!this.hover) {
+      if (!hover) {
         fill(black);
-        triangle(this.x - this.w/2 + this.w/10, this.y - this.h/2 + this.h/10, this.x + this.w/2 + this.w/10, this.y - this.h/2 + this.h/10, this.x + this.w/10, this.y + this.h/2 + this.h/10);
+        triangle(x - w/2 + w/10, y - h/2 + h/10, x + w/2 + w/10, y - h/2 + h/10, x + w/10, y + h/2 + h/10);
       }
-      fill(this.c);
-      triangle(this.x - this.w/2, this.y - this.h/2, this.x + this.w/2, this.y - this.h/2, this.x, this.y + this.h/2);
+      fill(c);
+      triangle(x - w/2, y - h/2, x + w/2, y - h/2, x, y + h/2);
       textAlign(CENTER, CENTER);
-      fill(this.tc);
-      textSize(this.textSize);
-      text(this.text, this.x, this.y);
+      fill(tc);
+      textSize(textSize);
+      text(text, x, y);
       break;        
     case "-triangle":
-      if (!this.hover) {
+      if (!hover) {
         fill(black);
-        triangle(this.x + this.w/2 + this.w/10, this.y + this.h/2 + this.h/10, this.x - this.w/2 + this.w/10, this.y + this.h/2 + this.h/10, this.x + this.w/10, this.y - this.h/2 + this.h/10);
+        triangle(x + w/2 + w/10, y + h/2 + h/10, x - w/2 + w/10, y + h/2 + h/10, x + w/10, y - h/2 + h/10);
       }
-      fill(this.c);
-      triangle(this.x + this.w/2, this.y + this.h/2, this.x - this.w/2, this.y + this.h/2, this.x, this.y - this.h/2);
+      fill(c);
+      triangle(x + w/2, y + h/2, x - w/2, y + h/2, x, y - h/2);
       textAlign(CENTER, CENTER);
-      fill(this.tc);
-      textSize(this.textSize);
-      text(this.text, this.x, this.y);
+      fill(tc);
+      textSize(textSize);
+      text(text, x, y);
       break;
     }
-    if (mouseX <= this.x + this.w/2 && mouseX >= this.x - this.w/2 && mouseY <= this.y + this.h/2 && mouseY >= this.y - this.h/2) {
-      this.hover = true;
+    if (mouseX <= x + w/2 && mouseX >= x - w/2 && mouseY <= y + h/2 && mouseY >= y - h/2) {
+      hover = true;
     } else {
-      this.hover = false;
+      hover = false;
     }
-    if (this.hover && mousePressed) {
-      this.clicked = true;
+    if (hover && mousePressed) {
+      clicked = true;
     } else {
-      this.clicked = false;
+      clicked = false;
     }
   }
 
   public void run() {
-    this.display();
-    this.floater();
-    if (this.clicked) {
+    display();
+    floater();
+    if (clicked) {
       modeChanging = true;
-      gameMode = this.action;
+      gameMode = action;
     }
-    if (this.coolThing == "fade") {
-      this.a += 5;
+    if (coolThing == "fade") {
+      a += 5;
     }
     if (modeChanging) {
-      this.modeChange();
+      modeChange();
     }
   }
 
   public void floater() {
-    this.y += this.fFactor*sin(0.05*modeTime);
+    y += fFactor*sin(0.05*modeTime);
   }
 
   public void modeChange() {
-    if (this.coolThing == "fade") {
-      this.a = 0;
+    if (coolThing == "fade") {
+      a = 0;
     }
     modeTime = 0;
     modeChanging = false;
   }
 }
 
-Button game = new Button(500, 300, 175, 175, grey, "rect", "Game", black, "game", 30, 0.5, "fade");
-Button shop = new Button(350, 550, 175, 175, grey, "rect", "Shop", black, "shop", 30, 0.5, "fade");
-Button settings = new Button(650, 550, 175, 175, grey, "rect", "Settings", black, "settings", 30, 0.5, "fade");
-Button shopBack = new Button(100, 100, 75, 50, grey, "rect", "Back", black, "menu", 30, 0, "none");
 
-int[] theGraphic = new int[64];
-
-Player testPlayer = new Player(400, 400, 64, 64, testPalette, theGraphic);
-Fountain testFountain = new Fountain(500, 500, 64, 64);
 
 void draw() {
   background(white);
   if (gameMode == "menu") {
     fill(green);
     ellipse(500, 1000, 30*teaTime, 30*teaTime);
-    game.run();
-    shop.run();
-    settings.run();
-    testPlayer.display();
+    testButton.run();
     testFountain.run();
+    testPlayer.run();
+    if (teaTime > 20) {
+      testBlast.run();
+    }
+    testBlock.display();
   } // TODO
   if (gameMode == "game") {
     fill(black);
@@ -359,8 +504,6 @@ void draw() {
   if (gameMode == "settings") {
   } // TODO
   if (gameMode == "shop") {
-
-    shopBack.run();
   } // TODO
 
   ++teaTime;
